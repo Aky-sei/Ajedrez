@@ -1,4 +1,4 @@
-class Casilla {
+class Slot {
     constructor() {}
 
     mark(color) {
@@ -9,21 +9,22 @@ class Casilla {
         this.marked = false
         this.color = ""
     }
-
+    
     color = ""
     have = null
+    marked = false
 }
 
-class Ficha {
+class Piece {
     constructor(team) {
         this.team = team
     }
 
     checkMove(i,j) {
-        if (tablero[i] !== undefined && tablero[i][j] !== undefined) {
-            var target = tablero[i][j]
+        if (table[i] !== undefined && table[i][j] !== undefined) {
+            var target = table[i][j]
             if (target.have !== null) {
-                if (target.have.team !== turno) {
+                if (target.have.team !== turn) {
                     target.mark("red")
                 }
             } else {
@@ -33,12 +34,14 @@ class Ficha {
     }
 }
 
-class Caballo extends Ficha {
+class Knight extends Piece {
     constructor(team) {
         super(team)
     }
 
     move(i,j) {
+        selected.x = i
+        selected.y = j
         this.checkMove(i+2,j+1)
         this.checkMove(i+2,j-1)
         this.checkMove(i+1,j+2)
@@ -47,18 +50,25 @@ class Caballo extends Ficha {
         this.checkMove(i-1,j-2)
         this.checkMove(i-2,j+1)
         this.checkMove(i-2,j-1)
+        table[i][j].mark("blue")
     }
+
+    type = "Knight"
 }
 
-var turno = 0
-var tablero
+var selected = {
+    x: null,
+    y: null
+}
+var turn = 0
+var table
 
 //Setup
 function setup () {
-    tablero = [[],[],[],[],[],[],[],[]]
+    table = [[],[],[],[],[],[],[],[]]
     for(i=0;i<8;i++) {
         for(j=0;j<8;j++) {
-            tablero[i][j] = new Casilla(i,j);
+            table[i][j] = new Slot(i,j);
         }
     }
 } setup()
@@ -73,26 +83,93 @@ function createButtons() {
         }
     }
 } createButtons()
+function addEvents() {
+    for (let i = 0; i < 64; i++) {
+        document.getElementById(i).addEventListener("click",click)
+    }
+} addEvents()
+function colorPattern() {
+    for (let i = 0; i < 64; i++) {
+        var y = Math.floor(i/8)
+        var x = i % 8
+        var target = table[x][y]
+        if ((x+y)%2 == 0) {
+            target.background = "black"
+        } else {
+            target.background = "white"
+        }
+    }
+} colorPattern()
 
 //View
 function view() {
     for(i=0;i<64;i++){
         let y = Math.floor(i/8)
         let x = i%8
-        if(tablero[x][y].color == "") {
-            document.getElementById(i).style.backgroundColor = tablero[x][y].background
+        let slot = document.getElementById(i)
+        let target = table[x][y]
+        if(target.color == "") {
+            slot.style.backgroundColor = target.background
         } else {
-            document.getElementById(i).style.backgroundColor = tablero[x][y].color
-        } if (tablero[x][y].ocupado) {
-            document.getElementById(i).value = tablero[x][y].jugador
+            slot.style.backgroundColor = target.color
+        } if (target.have !== null) {
+            if (target.have.team == 1) {
+                slot.style.color = "red"
+            } if (target.have.team == 0) {
+                slot.style.color = "green"
+            }
+            switch (target.have.type) {
+                case "Knight":
+                    slot.value = "K"
+                    break;
+            }
         } else {
-            document.getElementById(i).value = "."
+            slot.value = "."
+            slot.style.color = "rgb(1,1,1,0)"
         }
     }
-    document.getElementById("texto").innerHTML = "Turno: " + turno;
+    document.getElementById("texto").innerHTML = "turn: " + turn;
 } view()
 
-tablero[1][1].have = new Caballo(0)
-tablero[1][1].have.move(1,1)
-console.log(tablero[2][3])
-console.log(tablero)
+//Click
+function click(event) {
+    var valor = event.srcElement.id
+    var y = Math.floor(valor/8)
+    var x = valor % 8
+    var target = table[x][y]
+    if (!target.marked) {
+        if(target.have !== null) {
+            if(target.have.team == turn) {
+                target.have.move(x,y)
+            } else {alert("Seleccione una pieza de su equipo")}
+        } else {alert("Seleccione una Slot con una pieza")}
+    } else {
+        if (target.color == "blue") {
+            unMarkAll()
+        } if (target.color == "green" || target.color == "red") {
+            target.have = table[selected.x][selected.y].have
+            table[selected.x][selected.y].have = null
+            unMarkAll()
+            turn = (turn+1)%2
+        }
+    }
+    view()
+}
+
+//Desmarcar todo
+function unMarkAll() {
+    table.forEach(array => {
+        array.forEach(slot => {
+            slot.unmark()
+        })
+    })
+}
+
+table[1][0].have = new Knight(0)
+table[6][0].have = new Knight(0)
+table[1][7].have = new Knight(1)
+table[6][7].have = new Knight(1)
+// table[1][1].have.move(1,1)
+// console.log(table[2][3])
+console.log(table)
+view()
