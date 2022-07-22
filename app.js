@@ -185,6 +185,21 @@ var selected = {
 }
 var turn = 0
 var board
+var images = {
+    KnightB: "https://upload.wikimedia.org/wikipedia/commons/f/f1/Chess_ndt60.png",
+    KnightW: "https://upload.wikimedia.org/wikipedia/commons/2/28/Chess_nlt60.png",
+    KingB: "https://upload.wikimedia.org/wikipedia/commons/e/e3/Chess_kdt60.png",
+    KingW: "https://upload.wikimedia.org/wikipedia/commons/3/3b/Chess_klt60.png",
+    BishopB: "https://upload.wikimedia.org/wikipedia/commons/8/81/Chess_bdt60.png",
+    BishopW: "https://upload.wikimedia.org/wikipedia/commons/9/9b/Chess_blt60.png",
+    PawnB: "https://upload.wikimedia.org/wikipedia/commons/c/cd/Chess_pdt60.png",
+    PawnW: "https://upload.wikimedia.org/wikipedia/commons/0/04/Chess_plt60.png",
+    QueenB: "https://upload.wikimedia.org/wikipedia/commons/a/af/Chess_qdt60.png",
+    QueenW: "https://upload.wikimedia.org/wikipedia/commons/4/49/Chess_qlt60.png",
+    RookB: "https://upload.wikimedia.org/wikipedia/commons/a/a0/Chess_rdt60.png",
+    RookW: "https://upload.wikimedia.org/wikipedia/commons/5/5c/Chess_rlt60.png",
+    None: "https://upload.wikimedia.org/wikipedia/commons/5/54/Blank_Canvas_on_Transparent_Background.png"
+}
 
 //Setup
 function setup () {
@@ -199,9 +214,9 @@ function createButtons() {
     for(j=1;j<9;j++){
         for(i=0;i<8;i++){
             let text = "";
-            text += "<input type='button' id='"
+            text += "<button><img id='"
             text += (8-j)*8+i
-            text += "'>"
+            text += "'></button>"
             document.write(text)
         }
     }
@@ -217,9 +232,9 @@ function colorPattern() {
         var x = i % 8
         var target = board[x][y]
         if ((x+y)%2 == 0) {
-            target.background = "black"
+            target.background = "#769656"
         } else {
-            target.background = "white"
+            target.background = "#eeeed2"
         }
     }
 } colorPattern()
@@ -243,27 +258,50 @@ function view() {
             }
             switch (target.have.type) {
                 case "Knight":
-                    slot.value = "K"
+                    if(target.have.team == 0) {
+                        slot.src = images.KnightW
+                    } else {
+                        slot.src = images.KnightB
+                    }
                     break;
                 case "King":
-                    slot.value = "+"
+                    if(target.have.team == 0) {
+                        slot.src = images.KingW
+                    } else {
+                        slot.src = images.KingB
+                    }
                     break;
                 case "Rook":
-                    slot.value = "R"
+                    if(target.have.team == 0) {
+                        slot.src = images.RookW
+                    } else {
+                        slot.src = images.RookB
+                    }
                     break;
                 case "Bishop":
-                    slot.value = "B"
+                    if(target.have.team == 0) {
+                        slot.src = images.BishopW
+                    } else {
+                        slot.src = images.BishopB
+                    }
                     break;
                 case "Queen":
-                    slot.value = "Q"
+                    if(target.have.team == 0) {
+                        slot.src = images.QueenW
+                    } else {
+                        slot.src = images.QueenB
+                    }
                     break;
                 case "Pawn":
-                    slot.value = "p"
+                    if(target.have.team == 0) {
+                        slot.src = images.PawnW
+                    } else {
+                        slot.src = images.PawnB
+                    }
                     break;
             }
         } else {
-            slot.value = "."
-            slot.style.color = "rgb(1,1,1,0)"
+            slot.src = images.None
         }
     }
     if (turn == 0) {
@@ -293,7 +331,7 @@ function click(event) {
         } else {
             unMarkAll()
             if(selected.x == null) {
-                alert("Seleccione una Slot con una pieza")
+                alert("Seleccione una casilla con una pieza")
             }
             selected.x = null
             selected.y = null
