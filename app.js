@@ -13,6 +13,7 @@ class Slot {
     color = ""
     have = null
     marked = false
+    mated = false
 }
 
 class Piece {
@@ -66,9 +67,9 @@ class Pawn extends Piece {
         this.checkMove(i+1,j+direction,"r")
         this.checkMove(i-1,j+direction,"r")
         this.checkMove(i,j+direction,"g")
-        if (this.team == 0 && j == 1) {
+        if (this.team == 0 && j == 1 && board[i][j+1].have == null) {
             this.checkMove(i,j+direction*2,"g")
-        } if (this.team == 1 && j == 6) {
+        } if (this.team == 1 && j == 6 && board[i][j-1].have == null) {
             this.checkMove(i,j+direction*2,"g")
         }
         board[i][j].mark("blue")
@@ -154,6 +155,70 @@ class King extends Piece {
         board[i][j].mark("blue")
     }
 
+    checkMateLine(i,j,a,b,p) {
+        this.checkMate(i+a,j+b,i,j)
+        for(let k=2;k<8;k++){
+            if(board[i+k*a-a] !== undefined && board[i+k*a-a][j+k*b-b] !== undefined && board[i+k*a-a][j+k*b-b].have == null) {
+                this.checkMate(i+k*a,j+k*b,p,i,j)
+            } else {
+                break
+            }
+        }
+    }
+
+    checkMate(i,j,p,k,h) {
+        if (board[i] !== undefined && board[i][j] !== undefined) {
+            var target = board[i][j]
+            if (p == "d" && target.have !== null && target.have.team !== board[k][h].have.team) {
+                if (target.have.type == "Bishop" || target.have.type == "Queen") {
+                    target.mated = true
+                    board[k][h].mated = true
+                }
+            } if (p == "r" && target.have !== null && target.have.team !== board[k][h].have.team) {
+                if (target.have.type == "Rook" || target.have.type == "Queen") {
+                    target.mated = true
+                    board[k][h].mated = true
+                }
+            } if (p == "k" && target.have !== null && target.have.team !== board[k][h].have.team) {
+                if (target.have.type == "Knight") {
+                    target.mated = true
+                    board[k][h].mated = true
+                }
+            } if (p == "p" && target.have !== null && target.have.team !== board[k][h].have.team) {
+                if (target.have.type == "Pawn") {
+                    target.mated = true
+                    board[k][h].mated = true
+                }
+            }
+        }
+    }
+
+    mate(i,j) {
+        this.checkMateLine(i,j,1,0,"r")
+        this.checkMateLine(i,j,0,1,"r")
+        this.checkMateLine(i,j,-1,0,"r")
+        this.checkMateLine(i,j,0,-1,"r")
+        this.checkMateLine(i,j,1,1,"d")
+        this.checkMateLine(i,j,-1,-1,"d")
+        this.checkMateLine(i,j,1,-1,"d")
+        this.checkMateLine(i,j,-1,1,"d")
+        this.checkMate(i+2,j+1,"k",i,j)
+        this.checkMate(i+2,j-1,"k",i,j)
+        this.checkMate(i+1,j+2,"k",i,j)
+        this.checkMate(i+1,j-2,"k",i,j)
+        this.checkMate(i-1,j+2,"k",i,j)
+        this.checkMate(i-1,j-2,"k",i,j)
+        this.checkMate(i-2,j+1,"k",i,j)
+        this.checkMate(i-2,j-1,"k",i,j)
+        if(this.team == 0) {
+            this.checkMate(i-1,j+1,"p",i,j)
+            this.checkMate(i+1,j+1,"p",i,j)
+        } else {
+            this.checkMate(i-1,j-1,"p",i,j)
+            this.checkMate(i+1,j-1,"p",i,j)
+        }
+    }
+
     type = "King"
 }
 
@@ -182,6 +247,16 @@ class Knight extends Piece {
 var selected = {
     x: null,
     y: null
+}
+var king = {
+    zero: {
+        x: 0,
+        y: 0
+    },
+    one: {
+        x: 0,
+        y: 0
+    }
 }
 var turn = 0
 var board
@@ -241,21 +316,23 @@ function colorPattern() {
 
 //View
 function view() {
+    unMateAll()
+    board[king.zero.x][king.zero.y].have.mate(king.zero.x,king.zero.y)
+    board[king.one.x][king.one.y].have.mate(king.one.x,king.one.y)
     for(i=0;i<64;i++){
         let y = Math.floor(i/8)
         let x = i%8
         let slot = document.getElementById(i)
         let target = board[x][y]
         if(target.color == "") {
-            slot.style.backgroundColor = target.background
+            if(target.have !== null && target.mated == true){
+                slot.style.backgroundColor = "orange"
+            } else {
+                slot.style.backgroundColor = target.background
+            }
         } else {
             slot.style.backgroundColor = target.color
         } if (target.have !== null) {
-            if (target.have.team == 1) {
-                slot.style.color = "red"
-            } if (target.have.team == 0) {
-                slot.style.color = "green"
-            }
             switch (target.have.type) {
                 case "Knight":
                     if(target.have.team == 0) {
@@ -305,11 +382,11 @@ function view() {
         }
     }
     if (turn == 0) {
-        document.getElementById("texto").innerHTML = "Turno: Verde";
+        document.getElementById("texto").innerHTML = "Turno: Blanco";
     } else {
-        document.getElementById("texto").innerHTML = "Turno: Rojo";
+        document.getElementById("texto").innerHTML = "Turno: Negro";
     }
-} view()
+}
 
 //Click
 function click(event) {
@@ -322,11 +399,13 @@ function click(event) {
             if(target.have.team == turn) {
                 unMarkAll()
                 target.have.move(x,y)
+                view()
             } else {
                 unMarkAll()
                 selected.x = null
                 selected.y = null
                 alert("Seleccione una pieza de su equipo")
+                view()
             }
         } else {
             unMarkAll()
@@ -335,22 +414,41 @@ function click(event) {
             }
             selected.x = null
             selected.y = null
+            view()
         }
     } else {
+        if (selected.x == king.zero.x && selected.y == king.zero.y) {
+            king.zero.x = x
+            king.zero.y = y
+        } if (selected.x == king.one.x && selected.y == king.one.y) {
+            king.one.x = x
+            king.one.y = y
+        }
         if (target.color == "blue") {
             unMarkAll()
             selected.x = null
             selected.y = null
+            view()
         } if (target.color == "green" || target.color == "red") {
-            target.have = board[selected.x][selected.y].have
-            board[selected.x][selected.y].have = null
-            unMarkAll()
-            selected.x = null
-            selected.y = null
-            turn = (turn+1)%2
+            if (target.color == "red" && target.have.type == "King") {
+                if (turn == 0) {
+                    alert("Gana el jugador Blanco")
+                } else {
+                    alert("Gana el jugador Negro")
+                }
+                reset()
+                view()
+            } else {
+                target.have = board[selected.x][selected.y].have
+                board[selected.x][selected.y].have = null
+                unMarkAll()
+                selected.x = null
+                selected.y = null
+                turn = (turn+1)%2
+                view()
+            }
         }
     }
-    view()
 }
 
 //Desmarcar todo
@@ -362,7 +460,18 @@ function unMarkAll() {
     })
 }
 
+function unMateAll() {
+    board.forEach(array => {
+        array.forEach(slot => {
+            slot.mated = false
+        })
+    })
+}
+
 function reset() {
+    for(i=0;i<64;i++) {
+        board[Math.floor(i/8)][i%8].have = null
+    }
     board[1][0].have = new Knight(0)
     board[6][0].have = new Knight(0)
     board[1][7].have = new Knight(1)
@@ -387,6 +496,9 @@ function reset() {
     selected.x = null
     selected.y = null
     turn = 0
+    king.zero.x = 3
+    king.zero.y = 0
+    king.one.x = 4
+    king.one.y = 7
+    view()
 } reset()
-
-view()
